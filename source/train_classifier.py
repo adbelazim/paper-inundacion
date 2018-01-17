@@ -46,7 +46,9 @@ def main():
 
    #se entrena el grupo 0 solo inicialmente, luego dentro del loop se entrena el resto de los grupos aucmulados
    print("entrenando grupo 0")
-   best_score_svm, best_score_dt = data_split.train_cv_grid(tweets_data[0]["tweets"], tweets_data[0]["labels"], \
+   #best_score_svm, best_score_dt = data_split.train_cv_grid(tweets_data[0]["tweets"], tweets_data[0]["labels"], \
+   #            path_save, 0)
+   best_score_nb = data_split.train_cv_grid(tweets_data[0]["tweets"], tweets_data[0]["labels"], \
                path_save, 0)
 
    tweets_data_new = {}
@@ -66,7 +68,9 @@ def main():
       #                                                         test_size=0.20, random_state=199993)
       if group > 0:
          print("entrenando con grupo: ", group)
-         best_score_svm, best_score_dt = data_split.train_cv_grid(dict_new["tweets"], dict_new["labels"], \
+         #best_score_svm, best_score_dt = data_split.train_cv_grid(dict_new["tweets"], dict_new["labels"], \
+         #   path_save, group)
+         best_score_nb = data_split.train_cv_grid(dict_new["tweets"], dict_new["labels"], \
             path_save, group)
 
          

@@ -4,6 +4,7 @@ from sklearn.pipeline import Pipeline
 from sklearn import tree
 from sklearn.cross_validation import train_test_split
 from sklearn.model_selection import cross_val_predict
+from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import SVC
 from sklearn.externals import joblib
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -83,11 +84,18 @@ def train_cv_grid(X_train, y_train, \
    if not os.path.exists(path_save_tree):
       os.makedirs(path_save_tree)
 
+   path_save_nb = path_save + "/NB"
+   if not os.path.exists(path_save_nb):
+      os.makedirs(path_save_nb)
+
 
    vec = TfidfVectorizer(min_df=5, max_df=0.95, sublinear_tf = True,use_idf = True,ngram_range=(1, 2))
 
    #SVM classifier
    svm_clf = SVC(C=0.1, probability = True, max_iter = 10000, class_weight='balanced')
+
+   #naive bayes classifier
+   nb_clf = MultinomialNB()
 
    #DecisionTree
    tree_clf = tree.DecisionTreeClassifier(class_weight = 'balanced')
@@ -98,14 +106,18 @@ def train_cv_grid(X_train, y_train, \
                     {'kernel': ['linear'], 'C': [0.01,0.1,1, 10, 100, 1000]}]
 
    tree_parameters = {'criterion' : ['gini','entropy']}
+
+   nb_parameters = {'alpha': [1.0, 0.0]}
  
-   models = {'tree' : tree_clf,
-            'svm' : svm_clf}
+   #models = {'tree' : tree_clf,
+   #         'svm' : svm_clf}
+   models = {'nb' : nb_clf}
    #define metrics to optimize the gridsearch. Recall must to be better
    scores = ['precision', 'recall','f1']
    
    best_scores_svm = {}
    best_scores_dt = {}
+   best_scores_nb = {}
 
    for model in models:
       clf = models.get(model) 
@@ -126,6 +138,36 @@ def train_cv_grid(X_train, y_train, \
             vec_clf.fit(X_train, y_train)
             #print("results",clf_search.best_score_)
             best_scores_svm[score] = clf_search.best_score_
+
+            #file to save results
+            dir_save_pkl = path_save + '/Model/'
+            path_save_pkl = dir_save_pkl + score + '_' + model + '_' + str(group) +'classifier.pkl'
+            if not os.path.exists(dir_save_pkl):
+               os.makedirs(dir_save_pkl)
+
+            dir_save_report = path_save + '/Report/'
+            path_save_report = dir_save_report + score
+            if not os.path.exists(dir_save_report):
+               os.makedirs(dir_save_report)
+
+            joblib.dump(clf_search, path_save_pkl, compress=3)
+
+            #print("SVM trained for score: ", score)
+
+         elif model == 'nb':
+            #print("Train SVM for score: ", score)
+            path_save = path_save_nb
+            #param grid
+            grid_parameters = nb_parameters
+
+            #buidl grid search
+            clf_search = build_grid(clf,grid_parameters,score)
+            vec_clf = Pipeline([('vectorizer', vec), ('pac', clf_search)])
+
+            #fit the classifier to the train data
+            vec_clf.fit(X_train, y_train)
+            #print("results",clf_search.best_score_)
+            best_scores_nb[score] = clf_search.best_score_
 
             #file to save results
             dir_save_pkl = path_save + '/Model/'
@@ -170,10 +212,13 @@ def train_cv_grid(X_train, y_train, \
 
             #print("Dtree trained for score: ", score)
 
-   print("best_scores_svm",best_scores_svm)
-   print("best_scores_dt",best_scores_dt)
+   #print("best_scores_svm",best_scores_svm)
+   #print("best_scores_dt",best_scores_dt)
+   print("best_scores_dt",best_scores_nb)
    
-   return best_scores_svm, best_scores_dt
+
+   #return best_scores_svm, best_scores_dt
+   return best_scores_nb
          
 
          #predictions for
